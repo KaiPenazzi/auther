@@ -1,3 +1,7 @@
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use sqlx::{Executor, PgPool};
 
 use crate::model::user::User;
@@ -17,7 +21,7 @@ impl PostgresClient {
                 name TEXT NOT NULL,
                 email TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
-                roles TEXT[] NOT NULL DEFAULT ARRAY['user'],
+                roles TEXT[],
                 created_at TIMESTAMPTZ DEFAULT now(),
                 updated_at TIMESTAMPTZ DEFAULT now()
             );
@@ -29,7 +33,6 @@ impl PostgresClient {
     }
 
     pub async fn add_user(&self, user: User) -> Result<User, DBError> {
-        let roles: Vec<String> = vec!["user".to_string()];
         let rec = sqlx::query_as!(
             User,
             r#"
@@ -40,7 +43,7 @@ impl PostgresClient {
             user.name,
             user.email,
             user.password_hash,
-            &roles,
+            user.roles.as_deref(),
         )
         .fetch_one(&self.pool)
         .await?;
@@ -72,5 +75,23 @@ impl From<sqlx::Error> for DBError {
             sqlx::Error::RowNotFound => DBError::NotFound,
             other => DBError::DbError(other),
         }
+    }
+}
+
+impl IntoResponse for DBError {
+    fn into_response(self) -> Response {
+        let (status, body) = match self {
+            DBError::EmailExists => (StatusCode::CONFLICT, "Email already exists".to_string()),
+            DBError::NotFound => (StatusCode::NOT_FOUND, "Resource not found".to_string()),
+            DBError::DbError(e) => {
+                eprintln!("Database error occurred: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "An internal server error occurred".to_string(),
+                )
+            }
+        };
+
+        (status, body).into_response()
     }
 }

@@ -4,6 +4,8 @@ use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
 
+use crate::model::error::AuthError;
+
 #[derive(Serialize, Deserialize)]
 pub struct User {
     pub id: Option<Uuid>,
@@ -36,15 +38,18 @@ impl User {
         }
     }
 
-    pub fn verify_psw(&self, psw: &str) -> bool {
-        let parsed_hash = match PasswordHash::new(&self.password_hash) {
-            Ok(hash) => hash,
-            Err(_) => return false,
-        };
+    pub fn verify_psw(&self, psw: &str) -> Result<(), AuthError> {
+        let parsed_hash = PasswordHash::new(&self.password_hash).map_err(|e| {
+            eprintln!("Corrupt password hash: {:?}", e);
+            AuthError::InvalidCredentials
+        })?;
 
         Argon2::default()
             .verify_password(psw.as_bytes(), &parsed_hash)
-            .is_ok()
+            .map_err(|e| {
+                eprintln!("Password verification failed: {:?}", e);
+                AuthError::InvalidCredentials
+            })
     }
 }
 
@@ -54,4 +59,10 @@ pub struct UserRegistration {
     pub email: String,
     pub password: String,
     pub roles: Option<Vec<String>>,
+}
+
+#[derive(Deserialize)]
+pub struct UserLogin {
+    pub email: String,
+    pub password: String,
 }
