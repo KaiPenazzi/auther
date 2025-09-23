@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use axum_jwt_auth::{JwtDecoderState, LocalDecoder};
-use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use sqlx::PgPool;
 
 use crate::api::router;
@@ -17,6 +17,7 @@ mod model;
 struct AppState {
     decoder: JwtDecoderState<Claims>,
     db_client: Arc<PostgresClient>,
+    encoding_key: Arc<EncodingKey>,
 }
 
 #[tokio::main]
@@ -40,6 +41,7 @@ async fn main() {
             decoder: Arc::new(decoder),
         },
         db_client: Arc::new(db_client),
+        encoding_key: Arc::new(EncodingKey::from_rsa_pem(include_bytes!("../jwt.key")).unwrap()),
     };
 
     let app = router::get_router(state);
