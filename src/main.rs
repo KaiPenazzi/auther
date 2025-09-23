@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::Json;
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Router, extract::FromRef};
 use axum_jwt_auth::{Claims, JwtDecoderState, LocalDecoder};
