@@ -1,0 +1,76 @@
+use sqlx::{Executor, PgPool};
+
+use crate::model::user::User;
+
+pub struct PostgresClient {
+    pool: PgPool,
+}
+
+impl PostgresClient {
+    pub async fn new(pool: PgPool) -> Self {
+        pool.execute(
+            r#"
+            CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+            CREATE TABLE IF NOT EXISTS users (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                roles TEXT[] NOT NULL DEFAULT ARRAY['user'],
+                created_at TIMESTAMPTZ DEFAULT now(),
+                updated_at TIMESTAMPTZ DEFAULT now()
+            );
+        "#,
+        )
+        .await
+        .expect("could not migrate database");
+        Self { pool }
+    }
+
+    pub async fn add_user(&self, user: User) -> Result<User, DBError> {
+        let roles: Vec<String> = vec!["user".to_string()];
+        let rec = sqlx::query_as!(
+            User,
+            r#"
+            INSERT INTO users (name, email, password_hash, roles)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, name, email, password_hash, roles, created_at, updated_at
+            "#,
+            user.name,
+            user.email,
+            user.password_hash,
+            &roles,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(rec)
+    }
+
+    pub async fn get_user(&self, email: &str) -> Result<User, DBError> {
+        let user = sqlx::query_as!(User, r#"SELECT * FROM users WHERE email = $1"#, email)
+            .fetch_one(&self.pool)
+            .await?;
+
+        Ok(user)
+    }
+}
+
+pub enum DBError {
+    EmailExists,
+    NotFound,
+    DbError(sqlx::Error),
+}
+
+impl From<sqlx::Error> for DBError {
+    fn from(e: sqlx::Error) -> Self {
+        match e {
+            sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
+                DBError::EmailExists
+            }
+            sqlx::Error::RowNotFound => DBError::NotFound,
+            other => DBError::DbError(other),
+        }
+    }
+}
