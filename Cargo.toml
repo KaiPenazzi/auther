@@ -26,3 +26,4 @@ sqlx = { version = "0.8.6", features = [
     "chrono",               # <-- Add this, as TIMESTAMPTZ maps to chrono::DateTime<Utc>
 ] }
 tokio = { version = "1.47.1", features = ["rt-multi-thread", "macros"] }
+sha2 = "0.10.9"

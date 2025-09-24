@@ -7,12 +7,14 @@ use crate::db::DBError;
 
 pub enum AuthError {
     InvalidCredentials,
+    InvalidRefreshToken,
 }
 
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
             AuthError::InvalidCredentials => (StatusCode::UNAUTHORIZED, "Invalid credentials"),
+            AuthError::InvalidRefreshToken => (StatusCode::UNAUTHORIZED, "Invalid credentials"),
         };
         (status, error_message).into_response()
     }
