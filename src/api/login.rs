@@ -1,15 +1,21 @@
 use axum::{Json, extract::State};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{Algorithm, Header, encode};
+use serde::Deserialize;
 
 use crate::{
     AppState,
     model::{
         error::AppError,
         jwt::{Claims, JWT, Tokens, generate_refresh_token},
-        user::UserLogin,
     },
 };
+
+#[derive(Deserialize)]
+pub struct UserLogin {
+    pub email: String,
+    pub password: String,
+}
 
 #[axum::debug_handler]
 pub async fn login(

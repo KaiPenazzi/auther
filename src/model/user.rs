@@ -1,6 +1,5 @@
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::SaltString};
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use chrono::{DateTime, Utc};
-use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
 
@@ -18,26 +17,6 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(reg: UserRegistration) -> Self {
-        let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
-
-        let password_hash = argon2
-            .hash_password(reg.password.as_bytes(), &salt)
-            .unwrap()
-            .to_string();
-
-        User {
-            id: None,
-            name: reg.name,
-            email: reg.email,
-            password_hash,
-            roles: reg.roles,
-            created_at: None,
-            updated_at: None,
-        }
-    }
-
     pub fn verify_psw(&self, psw: &str) -> Result<(), AuthError> {
         let parsed_hash = PasswordHash::new(&self.password_hash).map_err(|e| {
             eprintln!("Corrupt password hash: {:?}", e);
@@ -51,18 +30,4 @@ impl User {
                 AuthError::InvalidCredentials
             })
     }
-}
-
-#[derive(Deserialize)]
-pub struct UserRegistration {
-    pub name: String,
-    pub email: String,
-    pub password: String,
-    pub roles: Option<Vec<String>>,
-}
-
-#[derive(Deserialize)]
-pub struct UserLogin {
-    pub email: String,
-    pub password: String,
 }
