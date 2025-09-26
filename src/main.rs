@@ -48,22 +48,3 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
-
-// async fn user(Claims(claims): Claims<MyClaims>) -> Json<User> {
-//     let user = match claims.name.as_str() {
-//         "kai" => User {
-//             name: "kai".to_string(),
-//             email: "kai@mail.com".to_string(),
-//         },
-//         "test" => User {
-//             name: "test".to_string(),
-//             email: "test@mail.com".to_string(),
-//         },
-//         _ => User {
-//             name: "".to_string(),
-//             email: "".to_string(),
-//         },
-//     };
-//
-//     Json(user)
-// }

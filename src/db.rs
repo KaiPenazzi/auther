@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::model::{
     error::{AppError, AuthError},
     jwt::Refresh,
-    user::User,
+    user::{User, UserUpdate},
 };
 
 pub struct PostgresClient {
@@ -66,6 +66,31 @@ impl PostgresClient {
         Ok(rec)
     }
 
+    pub async fn update_user(&self, user: UserUpdate) -> Result<User, DBError> {
+        let test_time = Utc::now();
+        println!("{:?}", test_time);
+        let rec = sqlx::query_as!(
+            User,
+            r#"
+            UPDATE users
+            SET
+                name          = COALESCE($2, name),
+                email         = COALESCE($3, email),
+                updated_at    = $4
+            WHERE id = $1
+            RETURNING id, name, email, password_hash, roles, created_at, updated_at
+            "#,
+            user.id,
+            user.name,
+            user.email,
+            test_time,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(rec)
+    }
+
     pub async fn get_user_email(&self, email: &str) -> Result<User, DBError> {
         let user = sqlx::query_as!(User, r#"SELECT * FROM users WHERE email = $1"#, email)
             .fetch_one(&self.pool)
@@ -74,7 +99,7 @@ impl PostgresClient {
         Ok(user)
     }
 
-    async fn get_user_uuid(&self, uuid: &Uuid) -> Result<User, DBError> {
+    pub async fn get_user_id(&self, uuid: &Uuid) -> Result<User, DBError> {
         let user = sqlx::query_as!(User, r#"SELECT * FROM users WHERE id = $1"#, uuid)
             .fetch_one(&self.pool)
             .await?;
@@ -138,7 +163,7 @@ impl PostgresClient {
     pub async fn get_user_refresh(&self, token: Refresh) -> Result<User, AppError> {
         let user_id = self.check_refresh_token(token).await?;
         Ok(self
-            .get_user_uuid(&user_id)
+            .get_user_id(&user_id)
             .await
             .map_err(|e| AppError::Db(e))?)
     }

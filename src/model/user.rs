@@ -31,3 +31,9 @@ impl User {
             })
     }
 }
+
+pub struct UserUpdate {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub email: Option<String>,
+}
