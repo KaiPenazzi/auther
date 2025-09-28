@@ -6,7 +6,7 @@ use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use sqlx::PgPool;
 
 use crate::api::router;
-use crate::db::PostgresClient;
+use crate::db::client::PostgresClient;
 use crate::model::jwt::Claims;
 
 mod api;

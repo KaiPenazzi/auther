@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AppState,
-    db::DBError,
+    db::error::DBError,
     model::{
         jwt,
         user::{User, UserUpdate},

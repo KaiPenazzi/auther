@@ -3,7 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::db::DBError;
+use crate::db::error::DBError;
 
 pub enum AuthError {
     InvalidCredentials,

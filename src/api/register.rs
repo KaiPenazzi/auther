@@ -3,7 +3,7 @@ use axum::{Json, extract::State};
 use rand_core::OsRng;
 use serde::Deserialize;
 
-use crate::{AppState, db::DBError, model::user::User};
+use crate::{AppState, db::error::DBError, model::user::User};
 
 #[derive(Deserialize)]
 pub struct UserRegistration {
